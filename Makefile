@@ -123,13 +123,12 @@ $U/_%: $B/$U/%.o $(ULIB) $U/user.ld
 	$(OBJDUMP) -S $@ > $B/$U/$*.asm
 	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $B/$U/$*.sym
 
-$B/$U/usys.S : $U/usys.pl
-	mkdir -p $B/$U
-	perl $U/usys.pl > $B/$U/usys.S
+$U/usys.S : $U/usys.pl
+	perl $U/usys.pl > $U/usys.S
 
-$B/$U/usys.o : $B/$U/usys.S
+$B/$U/usys.o : $U/usys.S
 	mkdir -p $B/$U
-	$(CC) $(CFLAGS) -c -o $B/$U/usys.o $B/$U/usys.S
+	$(CC) $(CFLAGS) -c -o $B/$U/usys.o $U/usys.S
 
 $B/$U/%.o: $U/%.c
 	mkdir -p $B/$U
@@ -176,7 +175,7 @@ clean:
 	*/*.o */*.d */*.asm */*.sym \
 	$B/$K/kernel fs.img \
 	mkfs/mkfs .gdbinit \
-        $B/$U/usys.S \
+        $U/usys.S \
 	$(UPROGS)
 	rm -rf $B
 
