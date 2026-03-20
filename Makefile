@@ -1,34 +1,35 @@
 K=kernel
 U=user
+B=bin
 
 OBJS = \
-  $K/entry.o \
-  $K/start.o \
-  $K/console.o \
-  $K/printf.o \
-  $K/uart.o \
-  $K/kalloc.o \
-  $K/spinlock.o \
-  $K/string.o \
-  $K/main.o \
-  $K/vm.o \
-  $K/proc.o \
-  $K/swtch.o \
-  $K/trampoline.o \
-  $K/trap.o \
-  $K/syscall.o \
-  $K/sysproc.o \
-  $K/bio.o \
-  $K/fs.o \
-  $K/log.o \
-  $K/sleeplock.o \
-  $K/file.o \
-  $K/pipe.o \
-  $K/exec.o \
-  $K/sysfile.o \
-  $K/kernelvec.o \
-  $K/plic.o \
-  $K/virtio_disk.o
+  $B/$K/entry.o \
+  $B/$K/start.o \
+  $B/$K/console.o \
+  $B/$K/printf.o \
+  $B/$K/uart.o \
+  $B/$K/kalloc.o \
+  $B/$K/spinlock.o \
+  $B/$K/string.o \
+  $B/$K/main.o \
+  $B/$K/vm.o \
+  $B/$K/proc.o \
+  $B/$K/swtch.o \
+  $B/$K/trampoline.o \
+  $B/$K/trap.o \
+  $B/$K/syscall.o \
+  $B/$K/sysproc.o \
+  $B/$K/bio.o \
+  $B/$K/fs.o \
+  $B/$K/log.o \
+  $B/$K/sleeplock.o \
+  $B/$K/file.o \
+  $B/$K/pipe.o \
+  $B/$K/exec.o \
+  $B/$K/sysfile.o \
+  $B/$K/kernelvec.o \
+  $B/$K/plic.o \
+  $B/$K/virtio_disk.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
@@ -86,44 +87,63 @@ endif
 
 LDFLAGS = -z max-page-size=4096
 
-$K/kernel: $(OBJS) $K/kernel.ld
-	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $K/kernel $(OBJS) 
-	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
-	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
+$B/$K/kernel: $(OBJS) $K/kernel.ld
+	mkdir -p $B/$K
+	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $B/$K/kernel $(OBJS) 
+	$(OBJDUMP) -S $B/$K/kernel > $B/$K/kernel.asm
+	$(OBJDUMP) -t $B/$K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $B/$K/kernel.sym
 
-$K/%.o: $K/%.S
+$B/$K/%.o: $K/%.c
+	mkdir -p $B/$K
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$B/$K/entry.o: $K/entry.S
+	mkdir -p $B/$K
+	$(CC) -march=rv64gc -g -c -o $@ $<
+
+$B/$K/swtch.o: $K/swtch.S
+	mkdir -p $B/$K
+	$(CC) -march=rv64gc -g -c -o $@ $<
+
+$B/$K/trampoline.o: $K/trampoline.S
+	mkdir -p $B/$K
+	$(CC) -march=rv64gc -g -c -o $@ $<
+
+$B/$K/kernelvec.o: $K/kernelvec.S
+	mkdir -p $B/$K
 	$(CC) -march=rv64gc -g -c -o $@ $<
 
 tags: $(OBJS)
 	etags kernel/*.S kernel/*.c
 
-ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o
+ULIB = $B/$U/ulib.o $B/$U/usys.o $B/$U/printf.o $B/$U/umalloc.o
 
-_%: %.o $(ULIB) $U/user.ld
-	$(LD) $(LDFLAGS) -T $U/user.ld -o $@ $< $(ULIB)
-	$(OBJDUMP) -S $@ > $*.asm
-	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
+$U/_%: $B/$U/%.o $(ULIB) $U/user.ld
+	$(LD) $(LDFLAGS) -T $U/user.ld -o $@ $B/$U/$*.o $(ULIB)
+	$(OBJDUMP) -S $@ > $B/$U/$*.asm
+	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $B/$U/$*.sym
 
-$U/usys.S : $U/usys.pl
-	perl $U/usys.pl > $U/usys.S
+$B/$U/usys.S : $U/usys.pl
+	mkdir -p $B/$U
+	perl $U/usys.pl > $B/$U/usys.S
 
-$U/usys.o : $U/usys.S
-	$(CC) $(CFLAGS) -c -o $U/usys.o $U/usys.S
+$B/$U/usys.o : $B/$U/usys.S
+	mkdir -p $B/$U
+	$(CC) $(CFLAGS) -c -o $B/$U/usys.o $B/$U/usys.S
 
-$U/_forktest: $U/forktest.o $(ULIB)
+$B/$U/%.o: $U/%.c
+	mkdir -p $B/$U
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$U/_forktest: $B/$U/forktest.o $B/$U/ulib.o $B/$U/usys.o
+	mkdir -p $B/$U
 	# forktest has less library code linked in - needs to be small
 	# in order to be able to max out the proc table.
-	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $U/_forktest $U/forktest.o $U/ulib.o $U/usys.o
-	$(OBJDUMP) -S $U/_forktest > $U/forktest.asm
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $U/_forktest $B/$U/forktest.o $B/$U/ulib.o $B/$U/usys.o
+	$(OBJDUMP) -S $U/_forktest > $B/$U/forktest.asm
 
 mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
 	gcc -Wno-unknown-attributes -I. -o mkfs/mkfs mkfs/mkfs.c
-
-# Prevent deletion of intermediate files, e.g. cat.o, after first build, so
-# that disk image changes after first build are persistent until clean.  More
-# details:
-# http://www.gnu.org/software/make/manual/html_node/Chained-Rules.html
-.PRECIOUS: %.o
 
 UPROGS=\
 	$U/_cat\
@@ -149,15 +169,16 @@ UPROGS=\
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
 
--include kernel/*.d user/*.d
+-include $B/$K/*.d $B/$U/*.d
 
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*/*.o */*.d */*.asm */*.sym \
-	$K/kernel fs.img \
+	$B/$K/kernel fs.img \
 	mkfs/mkfs .gdbinit \
-        $U/usys.S \
+        $B/$U/usys.S \
 	$(UPROGS)
+	rm -rf $B
 
 # try to generate a unique GDB port
 GDBPORT = $(shell expr `id -u` % 5000 + 25000)
@@ -169,18 +190,18 @@ ifndef CPUS
 CPUS := 3
 endif
 
-QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 128M -smp $(CPUS) -nographic
+QEMUOPTS = -machine virt -bios none -kernel $B/$K/kernel -m 128M -smp $(CPUS) -nographic
 QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: check-qemu-version $K/kernel fs.img
+qemu: check-qemu-version $B/$K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: $K/kernel .gdbinit fs.img
+qemu-gdb: $B/$K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
