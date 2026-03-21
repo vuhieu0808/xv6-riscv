@@ -6,6 +6,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "vm.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -116,5 +117,25 @@ sys_trace(void)
   argint(0, &mask);
   if (mask < 0) return -1;
   myproc()->trace_mask = mask;
+  return 0;
+}
+
+// sysinfo system call.
+uint64
+sys_sysinfo(void)
+{
+  struct sysinfo info;
+  info.freemem = kfreemem();
+  info.nproc = count_active_procs();
+  info.nopenfiles = count_open_files();
+
+  uint64 addr;
+  argaddr(0, &addr);
+  if (addr < 0) {
+    return -1;
+  }
+  if (copyout(myproc()->pagetable, addr, (char *)&info, sizeof(info)) < 0) {
+    return -1;
+  }
   return 0;
 }
