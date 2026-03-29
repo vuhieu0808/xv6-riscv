@@ -162,7 +162,7 @@ syscall(void)
 
     // trace system calls.
     if ((p->trace_mask >> num) & 1) {
-      printf("%d %s: syscall %s -> %ld\n", p->pid, p->name, syscallnames[num], p->trapframe->a0);
+      printf("%d: syscall %s -> %ld\n", p->pid, syscallnames[num], p->trapframe->a0);
     }
   } else {
     printf("%d %s: unknown sys call %d\n",
