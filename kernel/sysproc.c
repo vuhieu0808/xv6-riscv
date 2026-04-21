@@ -153,13 +153,13 @@ sys_pgaccess(void)
   argaddr(2, &mask_addr); // user address of the mask
 
   if (len < 0) return -1;
-  if (len > 64) len = 64;
+  if (len > 64) return -1;
   
   uint64 mask = 0;
   for (int i = 0; i < len; i++) {
     uint64 va = base + i * PGSIZE;
     pte_t *pte = walk(myproc()->pagetable, va, 0);
-    if (pte && (*pte & PTE_V) && (*pte & PTE_A)) {
+    if (pte && (*pte & PTE_V) && (*pte & PTE_U) && (*pte & PTE_A)) {
       mask |= (1ULL << i); // set bit i if page is accessed
       *pte &= ~PTE_A; // clear the accessed bit
     }
@@ -167,5 +167,12 @@ sys_pgaccess(void)
   if (copyout(myproc()->pagetable, mask_addr, (char *)&mask, sizeof(mask)) < 0) {
     return -1;
   }
+  return 0;
+}
+
+uint64
+sys_vmprint(void)
+{
+  vmprint(myproc()->pagetable);
   return 0;
 }

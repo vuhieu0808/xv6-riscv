@@ -28,6 +28,7 @@ int uptime(void);
 int trace(int);
 int sysinfo(struct sysinfo *);
 int pgaccess(void *, int, void *);
+int vmprint(void);
 
 // ulib.c
 int stat(const char*, struct stat*);
