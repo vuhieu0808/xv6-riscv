@@ -484,3 +484,31 @@ ismapped(pagetable_t pagetable, uint64 va)
   }
   return 0;
 }
+
+void vmprint_dfs(pagetable_t pagetable, int level)
+{
+  for (int i = 0; i < 512; ++i) {
+    pte_t pte = pagetable[i];
+    if (pte & PTE_V) {
+      for (int j = 0; j <= level; ++j) {
+        if (j == 0) {
+          printf("..");
+        }
+        else {
+          printf(" ..");
+        }
+      }
+      uint64 pa = PTE2PA(pte);
+      printf("%d: pte %p pa %p\n", i, (void*)pte, (void*)pa);
+      if ((pte & (PTE_R | PTE_W | PTE_X)) == 0) {
+        vmprint_dfs((pagetable_t)pa, level + 1);
+      }
+    }
+  }
+}
+
+void vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  vmprint_dfs(pagetable, 0);
+}

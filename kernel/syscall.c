@@ -103,6 +103,7 @@ extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_trace(void);
 extern uint64 sys_sysinfo(void);
+extern uint64 sys_pgaccess(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -130,6 +131,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
 [SYS_sysinfo] sys_sysinfo,
+[SYS_pgaccess] sys_pgaccess,
 };
 
 // For debugging: a system call number to name mapping.
@@ -145,7 +147,7 @@ char *syscallnames[] = {
   [SYS_mknod]   "mknod",   [SYS_unlink]  "unlink",
   [SYS_link]    "link",    [SYS_mkdir]   "mkdir",
   [SYS_close]   "close",   [SYS_trace]   "trace",
-  [SYS_sysinfo] "sysinfo",
+  [SYS_sysinfo] "sysinfo", [SYS_pgaccess] "pgaccess",
 };
 
 void
